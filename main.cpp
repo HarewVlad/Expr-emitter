@@ -209,12 +209,56 @@ bool isToken(TokenKind kind)
 	}
 }
 
+bool matchToken(TokenKind kind)
+{
+	if (token.kind == kind)
+	{
+		next();
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+bool expectToken(TokenKind kind)
+{
+	if (token.kind == kind)
+	{
+		next();
+		return true;
+	}
+	else
+	{
+		std::cout << "fatal: unexpected token";
+		exit(EXIT_FAILURE);
+		return false;
+	}
+}
+
+Register parse();
+
 Register parse1()
 {
-	Register r = allocReg();
-	EMIT_MOV_RI(r, std::stoi(token.value));
-	next();
-	return r;
+	if (isToken(TOKEN_INT))
+	{
+		Register r = allocReg();
+		EMIT_MOV_RI(r, std::stoi(token.value));
+		next();
+		return r;
+	}
+	else if (matchToken(TOKEN_LPAREN))
+	{
+		Register r = parse();
+		expectToken(TOKEN_RPAREN);
+		return r;
+	}
+	else
+	{
+		std::cout << "fatal: parse1";
+		exit(EXIT_FAILURE);
+	}
 }
 
 Register parse0()
@@ -238,9 +282,10 @@ Register parse0()
 	return r1;
 }
 
-void parse()
+Register parse()
 {
-	(void)parse0();
+	Register r = parse0();
+	return r;
 }
 
 void emitCode()
@@ -268,9 +313,9 @@ void initStream(char *expr)
 
 int main()
 {
-	initStream(const_cast<char *>("1 + 2 + 3"));
+	initStream(const_cast<char *>("1 + 2 + (10 - 5)"));
 	initRegs();
 
-	parse();
+	(void)parse();
 	emitCode();
 }
