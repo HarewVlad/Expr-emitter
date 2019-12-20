@@ -1,2 +1,2 @@
 # Expr-emitter
-Translates expression to x86 asm code
+Takes an expression and converts it into x86 asm code (output.txt)
