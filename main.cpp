@@ -233,6 +233,7 @@ Register parse0()
 		{
 			EMIT_SUB_RR(r1, r2);
 		}
+		freeReg(r2);
 	}
 	return r1;
 }
