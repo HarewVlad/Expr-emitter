@@ -60,11 +60,11 @@ begin:
 	}
 	break;
 	OP('+', TOKEN_ADD, std::string("+"))
-		OP('-', TOKEN_SUB, std::string("-"))
-		OP('*', TOKEN_MUL, std::string("*"))
-		OP('/', TOKEN_DIV, std::string("/"))
-		OP('(', TOKEN_LPAREN, std::string("("))
-		OP(')', TOKEN_RPAREN, std::string(")"))
+	OP('-', TOKEN_SUB, std::string("-"))
+	OP('*', TOKEN_MUL, std::string("*"))
+	OP('/', TOKEN_DIV, std::string("/"))
+	OP('(', TOKEN_LPAREN, std::string("("))
+	OP(')', TOKEN_RPAREN, std::string(")"))
 
 	case '\0':
 		break;
@@ -157,6 +157,12 @@ void emitRex(uint8_t rx, uint8_t base)
 	emit8(0x2B); \
 	emitModRM(DIRECT, dst, src); \
 
+#define EMIT_MUL_RR(dst, src) \
+	emitRex(dst, src); \
+	emit8(0x0F); \
+	emit8(0xAF); \
+	emitModRM(DIRECT, dst, src); \
+
 #define EMIT_MOV_RI(dst, immediate) \
 	emitRex(0, dst); \
 	emit8(0xC7); \
@@ -239,11 +245,12 @@ bool expectToken(TokenKind kind)
 
 Register parse();
 
-Register parse1()
+Register parse2()
 {
 	if (isToken(TOKEN_INT))
 	{
 		Register r = allocReg();
+		assert(r != R_NONE);
 		EMIT_MOV_RI(r, std::stoi(token.value));
 		next();
 		return r;
@@ -259,6 +266,28 @@ Register parse1()
 		std::cout << "fatal: parse1";
 		exit(EXIT_FAILURE);
 	}
+}
+
+Register parse1()
+{
+	Register r1 = parse2();
+	while (isToken(TOKEN_MUL) || isToken(TOKEN_DIV))
+	{
+		TokenKind op = token.kind;
+		next();
+		Register r2 = parse2();
+		if (op == TOKEN_MUL)
+		{
+			EMIT_MUL_RR(r1, r2);
+		}
+		else
+		{
+			// TODO: div
+			assert(0);
+		}
+		freeReg(r2);
+	}
+	return r1;
 }
 
 Register parse0()
@@ -313,7 +342,7 @@ void initStream(char *expr)
 
 int main()
 {
-	initStream(const_cast<char *>("1 + 2 + (10 - 5)"));
+	initStream(const_cast<char *>("1 + 2 * (3 - 4)"));
 	initRegs();
 
 	(void)parse();
